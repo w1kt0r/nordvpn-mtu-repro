@@ -25,7 +25,9 @@ longer than `PATH_MAX` (default 1478 bytes outer, the measured value plus the
 60-byte WireGuard/IPv4 overhead). No ICMP is generated. Everything else is
 standard. All addresses are private test ranges.
 
-## 1. Mechanism, no account needed: `./repro.sh all`
+Quick start: `make repro`. `make` lists all targets.
+
+## 1. Mechanism, no account needed: `make repro`
 
 Plain kernel WireGuard between the peers at MTU 1420. Runs in about a minute.
 
@@ -50,7 +52,7 @@ Kernel WireGuard pads packets to multiples of 16 bytes, so the edge shows as
 1408 here instead of 1418; the stall is the same. The response headers arrive
 (small packets), the body does not.
 
-## 2. With the NordVPN client: `NORDVPN_TOKEN=<access token> ./nordvpn.sh all`
+## 2. With the NordVPN client: `NORDVPN_TOKEN=<access token> make nordvpn`
 
 Same topology, but both peers run nordvpn-linux 5.4.0 with Meshnet, signed in
 with the same access token (two devices of one account). The client sets the
@@ -64,12 +66,16 @@ end to end by the reporter (it needs an access token).
 ## Commands
 
 ```
-./repro.sh up            build and start the mechanism repro
-./repro.sh test          measure the edge and try the 1 MB download
-./repro.sh fix-mtu       set the tunnel MTU to 1400 on both peers
-./repro.sh reset         back to MTU 1420
-PROBING=1 ./repro.sh up  start the peers with net.ipv4.tcp_mtu_probing=1
-./repro.sh down          remove containers and networks
+make repro      all three scenarios, then clean up
+make up         build and start (MTU 1420, path drops packets > 1478 bytes)
+make test       measure the edge and try the 1 MB download
+make fix-mtu    set the tunnel MTU to 1400 on both peers
+make reset      back to MTU 1420
+make probing    restart with net.ipv4.tcp_mtu_probing=1
+make down       remove containers and networks
+make nordvpn    the NordVPN client variant (needs NORDVPN_TOKEN)
+make tarball    package the kit
+
 PATH_MAX=1450 WG_MTU=1420 ./repro.sh all    other sizes
 ```
 
