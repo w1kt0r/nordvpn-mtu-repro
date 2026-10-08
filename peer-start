@@ -1,0 +1,14 @@
+#!/bin/sh
+# Start nordvpnd, sign in with $NORDVPN_TOKEN, enable Meshnet, then idle.
+set -e
+[ -s /etc/machine-id ] || head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n' > /etc/machine-id
+mkdir -p /run/nordvpn && echo info > /run/nordvpn/loglevel
+/usr/sbin/nordvpnd > /var/log/nordvpnd.log 2>&1 &
+for i in $(seq 1 30); do nordvpn status >/dev/null 2>&1 && break; sleep 1; done
+nordvpn set analytics off >/dev/null 2>&1 || true
+if [ -n "${NORDVPN_TOKEN:-}" ]; then
+    nordvpn login --token "$NORDVPN_TOKEN" || true
+    nordvpn set meshnet on || true
+    [ -n "${NICKNAME:-}" ] && nordvpn meshnet set nickname "$NICKNAME" || true
+fi
+exec sleep infinity

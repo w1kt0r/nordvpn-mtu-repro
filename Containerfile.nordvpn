@@ -1,0 +1,16 @@
+# A Meshnet peer running the official NordVPN Linux client.
+FROM docker.io/library/debian:trixie
+ARG NORDVPN_VERSION=5.4.0
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl gnupg iproute2 iptables nftables procps python3 iputils-ping \
+ && curl -fsSL https://repo.nordvpn.com/gpg/nordvpn_public.asc -o /etc/apt/keyrings/nordvpn.asc \
+ && echo "deb [signed-by=/etc/apt/keyrings/nordvpn.asc] https://repo.nordvpn.com/deb/nordvpn/debian stable main" > /etc/apt/sources.list.d/nordvpn.list \
+ && apt-get update && apt-get install -y --no-install-recommends "nordvpn=${NORDVPN_VERSION}" \
+ && rm -rf /var/lib/apt/lists/*
+# /proc/sys is read-only in a container; the daemon's "sysctl -w net.ipv4.conf.all.rp_filter=2"
+# would make enabling Meshnet fail. This reports success when the value is already loose (2) or
+# every interface is loose, and fails like the real sysctl otherwise. Unrelated to the MTU issue.
+COPY sysctl-wrapper /usr/local/sbin/sysctl
+COPY peer-start /usr/local/bin/peer-start
+RUN chmod +x /usr/local/sbin/sysctl /usr/local/bin/peer-start
+CMD ["/usr/local/bin/peer-start"]

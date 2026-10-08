@@ -1,0 +1,12 @@
+#!/bin/bash
+# See Containerfile.nordvpn. Only "sysctl -w key=value" is intercepted.
+REAL=/usr/sbin/sysctl
+[ "$1" = "-w" ] && [ -n "$2" ] || exec "$REAL" "$@"
+out=$("$REAL" "$@" 2>&1); rc=$?
+[ $rc -eq 0 ] && { echo "$out"; exit 0; }
+key=${2%%=*}; want=${2#*=}; cur=$("$REAL" -n "$key" 2>/dev/null)
+[ "$cur" = "$want" ] && { echo "$key = $want"; exit 0; }
+if [ "$key" = net.ipv4.conf.all.rp_filter ] && [ "$want" = 2 ] && ! grep -qx 1 /proc/sys/net/ipv4/conf/*/rp_filter; then
+    echo "$key = $want"; exit 0
+fi
+echo "$out" >&2; exit $rc
