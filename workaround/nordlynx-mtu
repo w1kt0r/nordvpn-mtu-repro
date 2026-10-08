@@ -1,0 +1,29 @@
+#!/bin/sh
+# Keep the NordVPN Meshnet/NordLynx interface at a fixed MTU.
+#
+# nordvpn-linux sets nordlynx to (default-route MTU - 80), usually 1420, every
+# time it creates the interface, and offers no setting for it. On paths that
+# silently drop packets just below that size, TCP stalls. This watches link
+# changes and resets the MTU whenever the interface (re)appears or something
+# changes it.
+#
+# Environment: IFACE (default nordlynx), MTU (default 1400)
+IFACE=${IFACE:-nordlynx}
+MTU=${MTU:-1400}
+
+fix() {
+    cur=$(cat "/sys/class/net/$IFACE/mtu" 2>/dev/null) || return 0
+    if [ "$cur" != "$MTU" ]; then
+        if ip link set dev "$IFACE" mtu "$MTU"; then
+            echo "$IFACE: MTU $cur -> $MTU"
+        fi
+    fi
+}
+
+fix
+# One line per link event; react only to our interface.
+ip -o monitor link | while read -r line; do
+    case "$line" in
+        *" $IFACE:"*|*" $IFACE@"*) fix ;;
+    esac
+done

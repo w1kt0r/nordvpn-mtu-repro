@@ -83,6 +83,20 @@ Requires Podman and the WireGuard kernel module on the host. On Ubuntu the
 host's AppArmor profile for `wg` only allows key files under `/etc/wireguard`,
 which is where the script puts them.
 
+## Workaround until it is fixed
+
+`workaround/` holds a small systemd service that keeps `nordlynx` at MTU 1400:
+it watches link changes and resets the MTU whenever the NordVPN client
+recreates the interface or sets it back to 1420.
+
+```
+sudo make install-workaround      # installs and starts nordlynx-mtu.service
+journalctl -u nordlynx-mtu        # one line each time it corrects the MTU
+sudo make uninstall-workaround
+```
+
+Another value: `sudo systemctl edit nordlynx-mtu` and set `Environment=MTU=1380`.
+
 ## Suggested fixes
 
 1. Clamp TCP MSS on `nordlynx` with a margin, or default to a slightly lower

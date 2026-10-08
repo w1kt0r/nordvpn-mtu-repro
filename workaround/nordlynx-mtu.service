@@ -1,0 +1,21 @@
+[Unit]
+Description=Keep the NordVPN nordlynx interface at MTU 1400 (workaround for MTU blackholes)
+Documentation=https://github.com/w1kt0r/nordvpn-mtu-repro
+After=network.target
+
+[Service]
+Type=simple
+Environment=IFACE=nordlynx MTU=1400
+ExecStart=/usr/local/sbin/nordlynx-mtu
+Restart=always
+RestartSec=2
+# only needs to change network interfaces
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
